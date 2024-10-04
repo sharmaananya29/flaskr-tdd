@@ -84,3 +84,35 @@ def test_delete_message(client):
     rv = client.get("/delete/1")
     data = json.loads(rv.data)
     assert data["status"] == 1
+    
+def test_search_partial(client):
+    # log in using username and password
+    login(client, app.config["USERNAME"], app.config["PASSWORD"])
+    
+    # create a sample post
+    client.post("/add", data=dict(title="SamplePost", text="Test search partial"), follow_redirects=True,)
+    
+    # search partially for sample post.
+    rv = client.get("/search/?query=Samp", content_type="html/text")
+
+    # test asserts should pass
+    assert rv.status_code == 200
+    assert b"Samp" in rv.data
+    
+    # test assert should pass (negative)
+    rv = client.get("/search/?query=DDLJ", content_type="html/text")
+    assert b"DDLJ" not in rv.data
+    
+def test_login_required(client):
+    rv = client.get("/delete/1")
+    data = json.loads(rv.data)
+
+    assert rv.status_code == 401
+    assert data["message"] == "Please log in."
+
+    login(client, app.config["USERNAME"], app.config["PASSWORD"])
+    rv = client.get("/delete/1")
+    data = json.loads(rv.data)
+
+    assert rv.status_code == 200
+    assert data["status"] == 1
